@@ -29,4 +29,4 @@ jobs:
         with:
           file: Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/docker_ci_cd:app:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/docker_ci_cd:latest
