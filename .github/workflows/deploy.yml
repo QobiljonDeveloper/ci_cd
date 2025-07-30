@@ -1,8 +1,10 @@
 name: Deploy to VPS
+
 on:
   push:
     branches:
       - master
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -15,16 +17,16 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          touch ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
         shell: bash
-      - name: Kodni yuklash
+
+      - name: VPSga deploy qilish
         env:
           HOST: ${{ secrets.HOST }}
           USER: ${{ secrets.USERNAME }}
           APP_DIR: /ci_cd
           PORT: ${{ secrets.PORT }}
         run: |
-          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
           ssh $USER@$HOST "
             if [ ! -d $APP_DIR ]; then
               mkdir -p $APP_DIR
@@ -34,7 +36,15 @@ jobs:
             else
               cd $APP_DIR
               git pull origin master
+
+              # .env faylga PORT ni yozish yoki yangilash
+              if grep -q '^PORT=' .env 2>/dev/null; then
+                sed -i 's/^PORT=.*/PORT=${PORT}/' .env
+              else
+                echo 'PORT=${PORT}' >> .env
+              fi
             fi
+
             npm install
             npm run build
             pm2 restart ci_cd_app || pm2 start dist/main.js --name ci_cd_app
